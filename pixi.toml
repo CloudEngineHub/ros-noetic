@@ -1,7 +1,5 @@
 [workspace]
 name = "ros-noetic"
-# Just a convention, this is the same as the mutex package
-version = "0.6.0"
 description = "RoboStack repo to package ros-noetic packages as conda packages"
 authors = ["Tobias Fischer <tobias.fischer@qut.edu.au>", "Wolf Vollprecht <w.vollprecht@gmail.com>", "Silvio Traversaro <silvio@traversaro.it>"]
 channels = ["https://repo.prefix.dev/conda-forge"]
@@ -12,9 +10,11 @@ platforms = ["osx-arm64", "linux-64", "osx-64", "linux-aarch64", "win-64"]
 libc = { family="glibc", version="2.17" }
 
 [dependencies]
-python = ">=3.11.0,<3.12"
-rattler-build = ">=0.33.2"
-anaconda-client = ">=1.12"
+python = ">=3.12.0,<3.13"
+rattler-build = ">=0.57.0,<0.58"
+anaconda-client = ">=1.13.0"
+cmake = "<4.0"
+rattler-index = ">=0.27.16"
 
 [target.win-64.dependencies]
 # git is required by rattler-build
@@ -22,31 +22,29 @@ git = "*"
 
 [pypi-dependencies]
 # This is tipically the latest commit on main branch
-vinca = { git ="https://github.com/RoboStack/vinca.git", rev = "8c56fc3e47a988f1c05132f8db61cfc812552dcb" }
+vinca = { git = "https://github.com/RoboStack/vinca.git", rev = "78be54199102f9eb88956bfafa0edb12eb208d3e" }
 # Uncomment this line to work with a local vinca for faster iteration, but remember to comment it back
 # (and regenerate the pixi.lock) once you push the modified commit to the repo
 #vinca = { path = "../vinca", editable = true }
 
 [tasks]
-generate-recipes = { cmd = "vinca -m", depends-on = ["rename-file"] }
-remove-file = { cmd = "rm vinca.yaml; rm -rf recipes" }
-copy_additional_recipes = { cmd = "sh -c 'find additional_recipes/* -maxdepth 0 -type d -exec ln -s ../{} recipes/ \\;'" }
-build = { cmd = "rattler-build build --recipe-dir ./recipes -m ./conda_build_config.yaml -c robostack-staging -c https://repo.prefix.dev/conda-forge --skip-existing", depends-on = ["generate-recipes", "copy_additional_recipes"] }
-build_one_package = { cmd = "cp ./patch/$PACKAGE.*patch ./recipes/$PACKAGE/patch/; rattler-build build --recipe ./recipes/$PACKAGE/recipe.yaml -m ./conda_build_config.yaml -c robostack-staging -c https://repo.prefix.dev/conda-forge", env = { PACKAGE = "ros-noetic-ros-base" } }
-create_snapshot = { cmd = "vinca-snapshot -d noetic -o snapshot_$(date +\"%Y-%m-%d-%H-%M-%S\").yaml" }
-upload = "anaconda -t $ANACONDA_API_TOKEN upload"
+generate-recipes = { cmd = "vinca -m", depends-on = ["remove-recipes"] }
+generate-gha-workflows = { cmd = "vinca-gha --trigger-branch dummy_build_branch_as_it_is_unused -d ./recipes", depends-on = ["generate-recipes"] }
+check-patches = { cmd = "python check_patches_clean_apply.py", depends-on = ["generate-recipes"] }
+build_continue_on_failure = { cmd = "rattler-build build --recipe-dir ./recipes -m ./conda_build_config.yaml -c robostack-staging -c https://repo.prefix.dev/conda-forge --continue-on-failure --skip-existing", depends-on = ["generate-recipes"] }
+create_snapshot = { cmd = "vinca-snapshot -d noetic -o rosdistro_snapshot.yaml" }
+upload = "rattler-build upload anaconda -o robostack-staging -a $ANACONDA_API_TOKEN"
 
-[target.linux-64.tasks]
-rename-file = { cmd = "ln -s vinca_linux_64.yaml vinca.yaml", depends-on = ["remove-file"] }
+[tasks.build]
+cmd = "rattler-build build --recipe-dir ./recipes -m ./conda_build_config.yaml -c https://prefix.dev/robostack-staging -c https://prefix.dev/conda-forge --skip-existing"
+depends-on = ["generate-recipes"]
+description = "Build all packages, from the ./recipes dir. This will skip already existing packages, so it can be used to build only a subset of packages by first removing the recipes of the packages you want to rebuild (see `pixi remove-recipes`)."
 
-[target.osx-64.tasks]
-rename-file = { cmd = "ln -s vinca_osx.yaml vinca.yaml", depends-on = ["remove-file"] }
+[tasks.remove-recipes]
+cmd = "rm -rf recipes_only_patch; rm -rf recipes; mkdir recipes"
+description = "Remove all generated recipes, before regenerating them."
 
-[target.osx-arm64.tasks]
-rename-file = { cmd = "ln -s vinca_osx_arm64.yaml vinca.yaml", depends-on = ["remove-file"] }
-
-[target.linux-aarch64.tasks]
-rename-file = { cmd = "ln -s vinca_linux_aarch64.yaml vinca.yaml", depends-on = ["remove-file"] }
-
-[target.win-64.tasks]
-rename-file = { cmd = "cp vinca_win.yaml vinca.yaml", depends-on = ["remove-file"] }
+[tasks.build-one]
+cmd = "cp ./patch/{{ PACKAGE }}.*patch ./recipes/{{ PACKAGE }}/patch/; rattler-build build --recipe ./recipes/{{ PACKAGE }}/recipe.yaml -m ./conda_build_config.yaml -c https://prefix.dev/robostack-staging -c https://prefix.dev/conda-forge"
+args = [{ arg = "PACKAGE", default = "ros-noetic-ros-workspace" }]
+description = "Build a single package, from the ./recipes dir. Add the `ros-noetic-` prefix to the package name, e.g. `pixi build-one --package ros-noetic-ros-workspace`"

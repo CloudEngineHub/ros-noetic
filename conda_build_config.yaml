@@ -1,17 +1,45 @@
-gazebo:
-  - '11'
+krb5:
+  - 1.21
+numpy:
+  - 2
+assimp:
+  - 6.0.3
+libprotobuf:
+  - 6.33.5
+protobuf:
+  - 6.33.5
+spdlog:
+  - 1.17
+pugixml:
+  - '1.15'
+libopencv:
+  - 4.13.0
+libxml2:
+  - 2.14.*
+graphviz:
+  - 14.*
+# Mitigation for
+# https://github.com/RoboStack/ros-jazzy/pull/126#issuecomment-3515455380
+libcap:
+  - 2.77
+fmt:
+  - 12.1
+lua:
+  - 5.4
+tbb:
+  - '2022'
+tbb_devel:
+  - '2022'
+
+# Workaround for https://github.com/RoboStack/ros-jazzy/pull/40#issuecomment-2782226697
+cmake:
+  - 3.*
+
+# ROS1 stuff
 ogre:
   - 1.10.12
 setuptools:
   - 69
-numpy:
-  - 1.26
-libprotobuf:
-  - 5.28.3
-protobuf:
-  - 5.28.3
-spdlog:
-  - 1.14
 pyqt:
   - 5.15
 pyqtwebengine:
@@ -19,25 +47,22 @@ pyqtwebengine:
 pyqtchart:
   - 5.15
 tinyxml2:
-  - 10.0
-cmake:
-  - 3.*
-libopencv:
-  - 4.10.0
+  - 11.0
+gazebo:
+  - '11'
 
-cdt_name:
-  - ${{ "cos7" if linux }}
+cdt_name:  # [linux]
+  - conda  # [linux]
 
 python:
-  - 3.11.* *_cpython
+  - 3.12.* *_cpython
 python_impl:
   - cpython
 
 c_compiler:
   - gcc                        # [linux]
   - clang                      # [osx]
-  - vs2019                     # [win and x86_64]
-  - vs2022                     # [win and arm64]
+  - vs2022                     # [win]
 c_compiler_version:            # [unix]
   - 13                         # [linux]
   - 18                         # [osx]
@@ -52,8 +77,7 @@ c_stdlib_version:              # [unix]
 cxx_compiler:
   - gxx                        # [linux]
   - clangxx                    # [osx]
-  - vs2019                     # [win and x86_64]
-  - vs2022                     # [win and arm64]
+  - vs2022                     # [win]
 cxx_compiler_version:          # [unix]
   - 13                         # [linux]
   - 18                         # [osx]
