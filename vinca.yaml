@@ -286,8 +286,7 @@ packages_select_by_deps:
     - laser-proc
     - point-cloud-transport
     - point-cloud-transport-plugins
-    # fails due to some non-resolve dependency issue, disable temporarily
-    # - draco-point-cloud-transport
+    - draco-point-cloud-transport
     - point-cloud-color
     - image-transport-codecs
     - find-object-2d
