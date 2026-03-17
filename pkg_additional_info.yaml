@@ -5,7 +5,7 @@ octomap:
     override_version: '1.10.0'
 draco:
   generate_dummy_package_with_run_deps:
-    dep_name: conda-forge::draco
+    dep_name: draco
     max_pin: 'x.x.x'
     override_version: '1.5.7'
 ompl:
